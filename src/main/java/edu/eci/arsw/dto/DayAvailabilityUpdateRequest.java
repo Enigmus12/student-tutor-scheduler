@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
 import java.util.List;
+
 /** Solicitud para actualizar la disponibilidad de un día */
 @Data
 public class DayAvailabilityUpdateRequest {

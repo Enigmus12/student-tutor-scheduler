@@ -9,10 +9,14 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+
 /** Representa un intervalo de disponibilidad de un tutor */
-@Data @Builder @AllArgsConstructor @NoArgsConstructor
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Document("availability_slots")
-@CompoundIndex(name="uniq_av", def="{ 'tutorId':1, 'date':1, 'start':1 }", unique = true)
+@CompoundIndex(name = "uniq_av", def = "{ 'tutorId':1, 'date':1, 'start':1 }", unique = true)
 public class AvailabilitySlot {
     @Id
     private String id;

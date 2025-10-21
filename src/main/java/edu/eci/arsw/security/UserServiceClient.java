@@ -18,6 +18,7 @@ import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.Locale;
+
 /**
  * Cliente para comunicarse con el servicio de usuarios y obtener roles
  */
@@ -27,18 +28,20 @@ public class UserServiceClient {
 
     private final CacheManager cacheManager;
     private final WebClient webClient;
+
     /**
      * Constructor del cliente de servicio de usuarios
      */
     @Autowired
     public UserServiceClient(CacheManager cacheManager,
-                             @Value("${user.service.base-url}") String baseUrl) {
+            @Value("${user.service.base-url}") String baseUrl) {
         this.cacheManager = cacheManager;
         this.webClient = WebClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
+
     /**
      * Obtener los roles del usuario autenticado
      */
@@ -52,9 +55,9 @@ public class UserServiceClient {
                 .retryWhen(
                         Retry.backoff(2, Duration.ofMillis(200))
                                 .filter(ex -> !(ex instanceof WebClientResponseException.Unauthorized
-                                            || ex instanceof WebClientResponseException.Forbidden))
-                );
+                                        || ex instanceof WebClientResponseException.Forbidden)));
     }
+
     /**
      * Obtener los roles del usuario autenticado con caché
      */
@@ -75,7 +78,8 @@ public class UserServiceClient {
 
         try {
             RolesResponse fetched = getMyRoles(bearerHeader).block();
-            if (cache != null && fetched != null) cache.put(key, fetched);
+            if (cache != null && fetched != null)
+                cache.put(key, fetched);
             log.debug("roles cache MISS");
             return normalize(fetched);
         } catch (WebClientResponseException e) {
@@ -86,17 +90,20 @@ public class UserServiceClient {
             throw e;
         }
     }
+
     /**
      * Obtener roles desde la caché
      */
     private RolesResponse getCachedRoles(Cache cache, String key) {
-        if (cache == null) return null;
+        if (cache == null)
+            return null;
         RolesResponse cached = cache.get(key, RolesResponse.class);
         if (cached != null) {
             log.debug("roles cache HIT");
         }
         return cached;
     }
+
     /**
      * Evictar caché en caso de errores de autenticación
      */
@@ -106,17 +113,21 @@ public class UserServiceClient {
             evictCacheIfPresent(cache, key);
         }
     }
+
     /**
      * Evictar caché si está presente
      */
     private void evictCacheIfPresent(Cache cache, String key) {
-        if (cache != null) cache.evictIfPresent(key);
+        if (cache != null)
+            cache.evictIfPresent(key);
     }
+
     /**
      * Normalizar los roles a mayúsculas
      */
     private RolesResponse normalize(RolesResponse in) {
-        if (in == null) return null;
+        if (in == null)
+            return null;
         if (in.getRoles() != null) {
             in.setRoles(in.getRoles().stream()
                     .map(r -> r == null ? null : r.toUpperCase(Locale.ROOT))

@@ -13,7 +13,7 @@ public class StudentTutorSchedulerApplication {
     public static void main(String[] args) {
         SpringApplication.run(StudentTutorSchedulerApplication.class, args);
     }
-    /** Configuración de CORS para permitir solicitudes desde orígenes específicos */
+    /** Configuración de CORS */
     @Bean
     public WebMvcConfigurer corsConfigurer(@Value("${app.cors.allowed-origins}") String allowedOrigins) {
         return new WebMvcConfigurer() {

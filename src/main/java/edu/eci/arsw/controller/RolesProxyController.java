@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+
 /**
  * Controlador proxy para obtener los roles del usuario autenticado
  */
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class RolesProxyController {
 
     private final AuthorizationService authz;
+
     /**
      * Obtener los roles del usuario autenticado
      */
