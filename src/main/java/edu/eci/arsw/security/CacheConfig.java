@@ -3,25 +3,58 @@ package edu.eci.arsw.security;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.caffeine.CaffeineCache;
+import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-/** Configuración del gestor de caché para roles de usuario */
+
+/**
+ * Configuración de cachés de la aplicación.
+ */
 @Configuration
 @EnableCaching
 public class CacheConfig {
-    /** Configuración del gestor de caché para roles de usuario */
+    
+    /** Configuración del caché rolesByBearer */
     @Bean
-    public CacheManager cacheManager(org.springframework.core.env.Environment env) {
-        int ttl = Integer.parseInt(env.getProperty("roles.cache.ttl-seconds", "240"));
-        int maxSize = Integer.parseInt(env.getProperty("roles.cache.max-size", "10000"));
-        Caffeine<Object, Object> caffeine = Caffeine.newBuilder()
-                .maximumSize(maxSize)
-                .expireAfterWrite(ttl, TimeUnit.SECONDS)
+    public CacheManager cacheManager(Environment env) {
+        // Configuración del caché rolesByBearer
+        int rolesTtl = Integer.parseInt(env.getProperty("roles.cache.ttl-seconds", "240"));
+        int rolesMaxSize = Integer.parseInt(env.getProperty("roles.cache.max-size", "10000"));
+
+        Caffeine<Object, Object> rolesCaffeine = Caffeine.newBuilder()
+                .maximumSize(rolesMaxSize)
+                .expireAfterWrite(rolesTtl, TimeUnit.SECONDS)
                 .recordStats();
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager("rolesByBearer");
-        cacheManager.setCaffeine(caffeine);
-        return cacheManager;
+
+        CaffeineCache rolesCache = new CaffeineCache("rolesByBearer", rolesCaffeine.build());
+
+        // userPublicProfiles (para /public/profile)
+        // Permite configurar TTL y tamaño propios. Si no se especifican, hereda los de
+        // roles.
+        int profilesTtl = Integer.parseInt(
+                env.getProperty("profiles.cache.ttl-seconds",
+                        env.getProperty("userPublicProfiles.cache.ttl-seconds", String.valueOf(rolesTtl))));
+        int profilesMaxSize = Integer.parseInt(
+                env.getProperty("profiles.cache.max-size",
+                        env.getProperty("userPublicProfiles.cache.max-size", String.valueOf(rolesMaxSize))));
+
+        Caffeine<Object, Object> profilesCaffeine = Caffeine.newBuilder()
+                .maximumSize(profilesMaxSize)
+                .expireAfterWrite(profilesTtl, TimeUnit.SECONDS)
+                .recordStats();
+
+        CaffeineCache profilesCache = new CaffeineCache("userPublicProfiles", profilesCaffeine.build());
+
+        // Registrar ambos cachés
+        SimpleCacheManager manager = new SimpleCacheManager();
+        manager.setCaches(Arrays.asList(
+                rolesCache,
+                profilesCache));
+        return manager;
     }
 }

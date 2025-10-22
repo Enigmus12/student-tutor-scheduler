@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
+
 /**
  * Controlador para manejar las solicitudes de reserva
  */
@@ -24,6 +25,7 @@ public class ReservationController {
 
     private final ReservationService service;
     private final AuthorizationService authz;
+
     /**
      * Añadir métodos para manejar las solicitudes de reserva
      */
@@ -35,6 +37,7 @@ public class ReservationController {
         RolesResponse me = authz.me(authorization);
         return ResponseEntity.ok(service.create(me.getId(), req));
     }
+
     /**
      * Obtener las reservas propias
      */
@@ -47,6 +50,7 @@ public class ReservationController {
         RolesResponse me = authz.me(authorization);
         return ResponseEntity.ok(service.myReservations(me.getId(), from, to));
     }
+
     /**
      * Obtener las reservas para el tutor autenticado
      */
@@ -59,27 +63,31 @@ public class ReservationController {
         RolesResponse me = authz.me(authorization);
         return ResponseEntity.ok(service.reservationsForTutor(me.getId(), from, to));
     }
+
     /**
      * Cancelar una reserva propia (estudiante o tutor)
      */
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<Reservation> cancel(
-        @RequestHeader("Authorization") String authorization,
-        @PathVariable("id") String id) {                   
-    RolesResponse me = authz.me(authorization);
-    return ResponseEntity.ok(
-        service.changeStatusByStudentOrTutor(me.getId(), id, ReservationStatus.CANCELADO));
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable("id") String id) {
+
+        // Método local que decodifica el JWT y devuelve el "sub"
+        String actorId = authz.subject(authorization);
+        return ResponseEntity.ok(
+                service.changeStatusByStudentOrTutor(actorId, id, ReservationStatus.CANCELADO));
     }
+
     /**
      * Aceptar una reserva propia (tutor)
      */
     @PatchMapping("/{id}/accept")
     public ResponseEntity<Reservation> accept(
-        @RequestHeader("Authorization") String authorization,
-        @PathVariable("id") String id) {                   
-    authz.requireRole(authorization, "TUTOR");
-    RolesResponse me = authz.me(authorization);
-    return ResponseEntity.ok(
-        service.changeStatusByStudentOrTutor(me.getId(), id, ReservationStatus.ACEPTADO));
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable("id") String id) {
+        authz.requireRole(authorization, "TUTOR");
+        RolesResponse me = authz.me(authorization);
+        return ResponseEntity.ok(
+                service.changeStatusByStudentOrTutor(me.getId(), id, ReservationStatus.ACEPTADO));
     }
 }

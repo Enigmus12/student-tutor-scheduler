@@ -2,6 +2,7 @@ package edu.eci.arsw.security;
 
 import lombok.Data;
 import java.util.List;
+
 /** Respuesta con los roles de un usuario */
 @Data
 public class RolesResponse {

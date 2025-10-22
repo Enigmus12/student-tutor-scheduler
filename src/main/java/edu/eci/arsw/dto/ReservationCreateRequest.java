@@ -9,7 +9,10 @@ import java.time.LocalDate;
 /** Solicitud para crear una reserva */
 @Data
 public class ReservationCreateRequest {
-    @NotBlank private String tutorId;
-    @NotNull private LocalDate date;
-    @NotBlank private String hour; 
+    @NotBlank
+    private String tutorId;
+    @NotNull
+    private LocalDate date;
+    @NotBlank
+    private String hour;
 }
