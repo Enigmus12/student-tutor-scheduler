@@ -182,5 +182,7 @@ public class AvailabilityService {
 
         return added;
     }
-
+    public List<AvailabilitySlot> slotsForDay(String tutorId, LocalDate date) {
+        return repo.findByTutorIdAndDate(tutorId, date);
+    }
 }

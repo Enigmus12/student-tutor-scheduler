@@ -87,19 +87,32 @@ public class AvailabilityController {
      */
     @PutMapping("/day/{date}")
     public ResponseEntity<Void> replaceDay(
-            @RequestHeader("Authorization") String authorization,
-            @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @Valid @RequestBody DayAvailabilityUpdateRequest req) {
-        authz.requireRole(authorization, TUTOR_ROLE);
-        RolesResponse me = authz.me(authorization);
-        List<LocalTime> hours = req.getHours().stream().map(h -> java.time.LocalTime.parse(h + ":00")).toList();
-        java.util.Set<java.time.LocalTime> hoursWithRes = new java.util.HashSet<>();
-        for (LocalTime h : hours) {
-            if (reservationService.hasActiveReservationForTutorAt(me.getId(), date, h))
-                hoursWithRes.add(h);
+        @RequestHeader("Authorization") String authorization,
+        @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+        @Valid @RequestBody DayAvailabilityUpdateRequest req) {
+
+    authz.requireRole(authorization, TUTOR_ROLE);
+    RolesResponse me = authz.me(authorization);
+
+    // 1) Parsear horas solicitadas (puede ser lista vacía)
+    List<LocalTime> requestedHours = req.getHours().stream()
+        .map(h -> LocalTime.parse(h + ":00"))
+        .toList();
+
+    // 2) Cargar TODAS las horas existentes de disponibilidad ese día
+    List<AvailabilitySlot> existing = service.slotsForDay(me.getId(), date);
+
+    // 3) Marcar como protegidas TODAS las horas del día que tengan reserva activa
+    java.util.Set<LocalTime> hoursWithRes = new java.util.HashSet<>();
+    for (AvailabilitySlot s : existing) {
+        if (reservationService.hasActiveReservationForTutorAt(me.getId(), date, s.getStart())) {
+        hoursWithRes.add(s.getStart());
         }
-        service.replaceDay(me.getId(), date, hours, hoursWithRes);
-        return ResponseEntity.noContent().build();
+    }
+
+    // 4) Reemplazar (borrar lo que no esté en requestedHours ni protegido; crear nuevas)
+    service.replaceDay(me.getId(), date, requestedHours, hoursWithRes);
+    return ResponseEntity.noContent().build();
     }
 
     /**
