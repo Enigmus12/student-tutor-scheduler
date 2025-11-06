@@ -26,6 +26,9 @@ public class ReservationView {
 
     private String status; 
 
+    /** si se reunieron o no (null = sin reportar) */
+    private Boolean attended;
+
     // Enriquecido desde /public/profile 
     private String studentName;
     private String studentAvatar;

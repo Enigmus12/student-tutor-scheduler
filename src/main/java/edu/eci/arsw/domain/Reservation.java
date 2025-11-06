@@ -28,6 +28,9 @@ public class Reservation {
     private LocalTime start;
     private LocalTime end;
     private ReservationStatus status;
+    
+    /** true = se dictó; false = no se dictó; null = no reportado */
+    private Boolean attended;
     @CreatedDate
     private java.time.Instant createdAt;
     @LastModifiedDate
