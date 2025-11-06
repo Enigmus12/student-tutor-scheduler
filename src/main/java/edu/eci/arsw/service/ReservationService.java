@@ -52,8 +52,6 @@ public class ReservationService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El tutor ya tiene una reserva a esa hora");
         }
 
-        // Si el usuario también es TUTOR y ya tiene una clase ACTIVA/ACEPTADO a esa
-        // hora, bloquear.
         if (hasActiveReservationForTutorAt(studentId, date, start)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Ya tienes una sesión de tutoría a esa hora (como TUTOR)");
@@ -106,14 +104,15 @@ public class ReservationService {
     }
 
     /**
-     * Verificar si un tutor tiene una reserva activa en una fecha y hora
-     * específicas
+     * Verificar si un tutor tiene una reserva activa en una fecha y hora específicas.
+     * Una reserva se considera "activa" si está ACEPTADA (el frontend calculará si está en curso).
      */
     public boolean hasActiveReservationForTutorAt(String tutorId, LocalDate date, LocalTime start) {
         Reservation existing = repo.findByTutorIdAndDateAndStart(tutorId, date, start).orElse(null);
         if (existing == null)
             return false;
-        return existing.getStatus() == ReservationStatus.ACTIVA || existing.getStatus() == ReservationStatus.ACEPTADO;
+        // Solo ACEPTADO cuenta como activa (el estado ACTIVA ya no existe en el enum)
+        return existing.getStatus() == ReservationStatus.ACEPTADO;
     }
 
     /** Marcar asistencia (tutor o estudiante) */
