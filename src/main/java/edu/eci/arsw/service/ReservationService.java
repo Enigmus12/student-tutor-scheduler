@@ -34,8 +34,9 @@ public class ReservationService {
     public Reservation create(String studentId, ReservationCreateRequest req) {
         LocalDate date = req.getDate();
         LocalTime start = LocalTime.parse(req.getHour() + ":00");
-        if (!TimeUtils.isOnTheHour(start))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hora debe ser HH:00");
+        LocalTime end = LocalTime.parse(req.getHour() + ":00").plusHours(1);
+        if (!TimeUtils.isOnTheHour(start) || !TimeUtils.isOnTheHour(end))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hora debe ser exacta");
         if (studentId.equals(req.getTutorId()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "El tutor no puede ser el mismo que el estudiante");
@@ -58,9 +59,14 @@ public class ReservationService {
                     "Ya tienes una sesión de tutoría a esa hora (como TUTOR)");
         }
         Reservation r = Reservation.builder()
-                .studentId(studentId).tutorId(req.getTutorId())
-                .date(date).start(start).end(start.plusHours(1))
-                .status(ReservationStatus.ACTIVA).build();
+                .studentId(studentId)
+                .tutorId(req.getTutorId())
+                .date(req.getDate())
+                .start(start)
+                .end(start.plusHours(1))
+                .status(ReservationStatus.PENDIENTE)
+                .attended(null)
+                .build();
         try {
             return repo.save(r);
         } catch (DuplicateKeyException e) {
@@ -79,7 +85,7 @@ public class ReservationService {
      * Obtener las reservas para un tutor
      */
     public List<Reservation> reservationsForTutor(String tutorId, LocalDate from, LocalDate to) {
-        return repo.findByTutorIdAndDateBetween(tutorId, from, to);
+        return repo.findByTutorIdAndDateGreaterThanEqualAndDateLessThanEqual(tutorId, from, to);
     }
 
     /**
@@ -88,17 +94,13 @@ public class ReservationService {
     public Reservation changeStatusByStudentOrTutor(String actorId, String id, ReservationStatus newStatus) {
         Reservation r = repo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada"));
+
         boolean isStudent = actorId.equals(r.getStudentId());
-        boolean isTutor = actorId.equals(r.getTutorId());
-        if (newStatus == ReservationStatus.ACEPTADO && !isTutor) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
-                    "Solo el tutor puede aceptar");
+        boolean isTutor   = actorId.equals(r.getTutorId());
+        if (!isStudent && !isTutor) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes modificar esta reserva");
         }
-        if (!(isStudent || isTutor)) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "No permitido");
-        }
-        if (r.getStatus() == ReservationStatus.CANCELADO)
-            return r;
+
         r.setStatus(newStatus);
         return repo.save(r);
     }
@@ -112,5 +114,19 @@ public class ReservationService {
         if (existing == null)
             return false;
         return existing.getStatus() == ReservationStatus.ACTIVA || existing.getStatus() == ReservationStatus.ACEPTADO;
+    }
+
+    /** Marcar asistencia (tutor o estudiante) */
+    public Reservation setAttended(String actorId, String id, Boolean attended) {
+        Reservation r = repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada"));
+
+        boolean isStudent = actorId.equals(r.getStudentId());
+        boolean isTutor   = actorId.equals(r.getTutorId());
+        if (!isStudent && !isTutor) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes modificar esta reserva");
+        }
+        r.setAttended(attended);
+        return repo.save(r);
     }
 }
