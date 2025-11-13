@@ -50,7 +50,7 @@ public class ReservationViewAssembler {
         if (st == null) return null;
 
         // Si ya pasó la hora y no se reportó asistencia => INCUMPLIDA
-        if ((st == ReservationStatus.ACEPTADO || st == ReservationStatus.PENDIENTE || st == ReservationStatus.ACTIVA)
+        if ((st == ReservationStatus.ACEPTADO )
                 && isPast(r.getDate(), r.getEnd(), ZONE)
                 && (r.getAttended() == null || !r.getAttended())) {
             return ReservationStatus.INCUMPLIDA.name();

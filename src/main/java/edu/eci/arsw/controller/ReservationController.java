@@ -18,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Controlador para manejar las solicitudes de reserva
@@ -31,21 +32,25 @@ public class ReservationController {
     private final AuthorizationService authz;
     private final MongoTemplate mongo;
 
-    /**
-     * Añadir métodos para manejar las solicitudes de reserva
-     */
+    // Constantes para evitar duplicación de literales
+    private static final String FIELD_STUDENT_ID = "studentId";
+    private static final String FIELD_TUTOR_ID = "tutorId";
+    private static final String FIELD_DATE = "date";
+    private static final String FIELD_START = "start";
+    private static final String ROLE_STUDENT = "STUDENT";
+    private static final String ROLE_TUTOR = "TUTOR";
+
+    /** Crear una nueva reserva */
     @PostMapping
     public ResponseEntity<Reservation> create(
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody ReservationCreateRequest req) {
-        authz.requireRole(authorization, "STUDENT");
+        authz.requireRole(authorization, ROLE_STUDENT);
         RolesResponse me = authz.me(authorization);
         return ResponseEntity.ok(service.create(me.getId(), req));
     }
 
-    /**
-     * Obtener las reservas propias
-     */
+    /** Obtener mis reservas como estudiante */
     @GetMapping("/my")
     public List<Reservation> my(
             @RequestHeader("Authorization") String authorization,
@@ -53,22 +58,20 @@ public class ReservationController {
             @RequestParam(name = "to", required = false) String to) {
         RolesResponse me = authz.me(authorization);
         final String studentId = me.getId();
-        Query q = new Query().addCriteria(Criteria.where("studentId").is(studentId));
+        Query q = new Query().addCriteria(Criteria.where(FIELD_STUDENT_ID).is(studentId));
 
-        Criteria c = Criteria.where("date");
+        Criteria c = Criteria.where(FIELD_DATE);
         if (StringUtils.hasText(from))
             c = c.gte(from);
         if (StringUtils.hasText(to))
             c = c.lte(to);
         q.addCriteria(c);
 
-        q.with(Sort.by(Sort.Direction.ASC, "date").and(Sort.by("start")));
+        q.with(Sort.by(Sort.Direction.ASC, FIELD_DATE).and(Sort.by(FIELD_START)));
         return mongo.find(q, Reservation.class);
     }
 
-    /**
-     * Obtener las reservas para el tutor autenticado
-     */
+    /** Obtener mis reservas como tutor */
     @GetMapping("/for-me")
     public List<Reservation> forMe(
             @RequestHeader("Authorization") String authorization,
@@ -76,49 +79,110 @@ public class ReservationController {
             @RequestParam(name = "to", required = false) String to) {
         RolesResponse me = authz.me(authorization);
         final String tutorId = me.getId();
-        Query q = new Query().addCriteria(Criteria.where("tutorId").is(tutorId));
+        Query q = new Query().addCriteria(Criteria.where(FIELD_TUTOR_ID).is(tutorId));
 
-        Criteria c = Criteria.where("date");
+        Criteria c = Criteria.where(FIELD_DATE);
         if (StringUtils.hasText(from))
             c = c.gte(from);
         if (StringUtils.hasText(to))
             c = c.lte(to);
         q.addCriteria(c);
 
-        q.with(Sort.by(Sort.Direction.ASC, "date").and(Sort.by("start")));
+        q.with(Sort.by(Sort.Direction.ASC, FIELD_DATE).and(Sort.by(FIELD_START)));
         return mongo.find(q, Reservation.class);
     }
 
-    /**
-     * Cancelar una reserva propia (estudiante o tutor)
-     */
+    /** Cancelar una reserva (estudiante o tutor) */
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<Reservation> cancel(
             @RequestHeader("Authorization") String authorization,
-            @PathVariable("id") String id) { 
+            @PathVariable("id") String id) {
         RolesResponse me = authz.me(authorization);
         return ResponseEntity.ok(service.changeStatusByStudentOrTutor(me.getId(), id, ReservationStatus.CANCELADO));
     }
 
-    /**
-     * Aceptar una reserva propia 
-     */
+    /** Aceptar una reserva (tutor) */
     @PatchMapping("/{id}/accept")
     public ResponseEntity<Reservation> accept(
             @RequestHeader("Authorization") String authorization,
-            @PathVariable("id") String id) { 
-        authz.requireRole(authorization, "TUTOR");
+            @PathVariable("id") String id) {
+        authz.requireRole(authorization, ROLE_TUTOR);
         RolesResponse me = authz.me(authorization);
         return ResponseEntity.ok(service.changeStatusByStudentOrTutor(me.getId(), id, ReservationStatus.ACEPTADO));
     }
 
-    /** Marcar asistencia (tutor o estudiante) */
+    /** Marcar asistencia a una reserva (tutor) */
     @PatchMapping("/{id}/attended")
     public ResponseEntity<Reservation> attended(
             @RequestHeader("Authorization") String authorization,
-            @PathVariable("id") String id, 
+            @PathVariable("id") String id,
             @RequestParam("value") Boolean value) {
         RolesResponse me = authz.me(authorization);
         return ResponseEntity.ok(service.setAttended(me.getId(), id, value));
+    }
+
+    /**
+     * Verificar si el usuario autenticado puede chatear con otro usuario
+     * 
+     * El usuario debe estar autenticado (token válido)
+     * Debe existir al menos una reserva ACEPTADA o INCUMPLIDA entre ambos
+     * El usuario autenticado debe ser parte de esa reserva (como estudiante o
+     * tutor)
+     * 
+     * @param authorization Token de autenticación (Bearer token)
+     * @param withUserId    ID del otro usuario con quien se quiere chatear
+     * @return JSON con canChat (boolean) y información adicional
+     */
+    @GetMapping("/can-chat")
+    public ResponseEntity<Map<String, Object>> canChat(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam("withUserId") String withUserId) {
+
+        // Validar autenticación y obtener ID del usuario actual
+        RolesResponse me = authz.me(authorization);
+        String myId = me.getId();
+
+        // Validar que no esté intentando chatear consigo mismo
+        if (myId.equals(withUserId)) {
+            return ResponseEntity.ok(Map.of(
+                    "canChat", false,
+                    "reason", "No puedes chatear contigo mismo",
+                    "myId", myId,
+                    "withUserId", withUserId));
+        }
+
+        // Buscar reservas donde ambos usuarios estén relacionados
+        Query q = new Query();
+        q.addCriteria(new Criteria().orOperator(
+                // Yo soy estudiante, el otro es tutor
+                new Criteria().andOperator(
+                        Criteria.where(FIELD_STUDENT_ID).is(myId),
+                        Criteria.where(FIELD_TUTOR_ID).is(withUserId)),
+                // Yo soy tutor, el otro es estudiante
+                new Criteria().andOperator(
+                        Criteria.where(FIELD_TUTOR_ID).is(myId),
+                        Criteria.where(FIELD_STUDENT_ID).is(withUserId))));
+
+        // Solo permitir chat si hay reservas ACEPTADAS o INCUMPLIDAS
+        q.addCriteria(Criteria.where("status").in(
+                ReservationStatus.ACEPTADO,
+                ReservationStatus.INCUMPLIDA));
+
+        List<Reservation> reservations = mongo.find(q, Reservation.class);
+        boolean canChat = !reservations.isEmpty();
+
+        // Construir respuesta detallada
+        return ResponseEntity.ok(Map.of(
+                "canChat", canChat,
+                "myId", myId,
+                "withUserId", withUserId,
+                "reservationCount", reservations.size(),
+                "reason", canChat
+                        ? "Existe " + reservations.size() + " reserva(s) activa(s) o finalizada(s)"
+                        : "No existe una reserva activa entre estos usuarios",
+                "reservationIds", reservations.stream()
+                        .map(Reservation::getId)
+                        .limit(5)
+                        .toList()));
     }
 }
