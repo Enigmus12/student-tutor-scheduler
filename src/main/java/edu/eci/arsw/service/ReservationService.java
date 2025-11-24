@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -36,14 +37,17 @@ public class ReservationService {
         if (!TimeUtils.isOnTheHour(start) || !TimeUtils.isOnTheHour(end))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La hora debe ser exacta (HH:00)");
         if (studentId.equals(req.getTutorId()))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El tutor no puede ser el mismo que el estudiante");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El tutor no puede ser el mismo que el estudiante");
         if (TimeUtils.isPast(date, start, java.time.ZoneId.of("America/Bogota")))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede reservar en una hora pasada");
 
         avRepo.findByTutorIdAndDateAndStart(req.getTutorId(), date, start)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "El tutor no tiene disponibilidad en ese horario"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
+                        "El tutor no tiene disponibilidad en ese horario"));
 
-        if (repo.existsByStudentIdAndDateAndStart(studentId, date, start) || repo.existsByTutorIdAndDateAndStart(req.getTutorId(), date, start)) {
+        if (repo.existsByStudentIdAndDateAndStart(studentId, date, start)
+                || repo.existsByTutorIdAndDateAndStart(req.getTutorId(), date, start)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe una reserva en este horario");
         }
 
@@ -77,24 +81,27 @@ public class ReservationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar esta reserva");
         }
 
-        // impedir cancelación si ya está aceptada 
+        // impedir cancelación si ya está aceptada
         if (newStatus == ReservationStatus.CANCELADO && r.getStatus() == ReservationStatus.ACEPTADO) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "No se puede cancelar una reserva que ya ha sido aceptada.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No se puede cancelar una reserva que ya ha sido aceptada.");
         }
         // Solo se puede cancelar si está PENDIENTE
         if (newStatus == ReservationStatus.CANCELADO && r.getStatus() != ReservationStatus.PENDIENTE) {
-             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden cancelar reservas con estado PENDIENTE.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Solo se pueden cancelar reservas con estado PENDIENTE.");
         }
-        
+
         // El tutor solo puede ACEPTAR si está PENDIENTE
         if (isTutor && newStatus == ReservationStatus.ACEPTADO && r.getStatus() != ReservationStatus.PENDIENTE) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden aceptar reservas con estado PENDIENTE.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Solo se pueden aceptar reservas con estado PENDIENTE.");
         }
 
         r.setStatus(newStatus);
         return repo.save(r);
     }
-    
+
     /**
      * Verificar si un tutor tiene una reserva que bloquea su horario.
      * Una reserva PENDIENTE o ACEPTADA se considera que bloquea la disponibilidad.
@@ -116,25 +123,36 @@ public class ReservationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el tutor puede marcar la asistencia");
         }
 
-        // Solo se puede marcar asistencia en reservas que han sido aceptadas y ya pasaron
-        if (r.getStatus() != ReservationStatus.ACEPTADO && r.getStatus() != ReservationStatus.FINALIZADA && r.getStatus() != ReservationStatus.INCUMPLIDA) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo se puede marcar asistencia en clases aceptadas.");
+        // Solo se puede marcar asistencia en reservas que han sido aceptadas y ya
+        // pasaron
+        if (r.getStatus() != ReservationStatus.ACEPTADO && r.getStatus() != ReservationStatus.FINALIZADA
+                && r.getStatus() != ReservationStatus.INCUMPLIDA) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Solo se puede marcar asistencia en clases aceptadas.");
         }
 
         if (!TimeUtils.isPast(r.getDate(), r.getEnd(), java.time.ZoneId.of("America/Bogota"))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede marcar asistencia hasta que la clase haya finalizado.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No se puede marcar asistencia hasta que la clase haya finalizado.");
         }
 
         r.setAttended(attended);
-        // Si se marca asistencia, la vista lo interpretará como FINALIZADA o INCUMPLIDA.
+        // Si se marca asistencia, la vista lo interpretará como FINALIZADA o
+        // INCUMPLIDA.
         return repo.save(r);
     }
 
+    /** Obtener mis reservas como estudiante */
     public List<Reservation> myReservations(String studentId, LocalDate from, LocalDate to) {
         return repo.findByStudentIdAndDateBetween(studentId, from, to);
     }
 
+    /** Obtener mis reservas como tutor */
     public List<Reservation> reservationsForTutor(String tutorId, LocalDate from, LocalDate to) {
         return repo.findByTutorIdAndDateGreaterThanEqualAndDateLessThanEqual(tutorId, from, to);
+    }
+    /** Obtener una reserva por ID */
+    public Optional<Reservation> findById(String id) {
+        return repo.findById(id);
     }
 }

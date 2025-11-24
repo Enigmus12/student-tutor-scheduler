@@ -185,4 +185,37 @@ public class ReservationController {
                         .limit(5)
                         .toList()));
     }
+
+    /** Obtener una reserva por ID */
+    @GetMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> getOne(
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable("id") String id) {
+
+        // Autenticado
+        RolesResponse me = authz.me(authorization);
+
+        // Recupera la reserva
+        Reservation r = service.findById(id)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Reservation not found"));
+
+        // Solo participante puede verla
+        boolean participant = me.getId().equals(r.getStudentId()) || me.getId().equals(r.getTutorId());
+        if (!participant) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Not a participant");
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "id", r.getId(),
+                "status", r.getStatus().name(), 
+                FIELD_STUDENT_ID, r.getStudentId(),
+                FIELD_TUTOR_ID, r.getTutorId(),
+                "date", r.getDate(), 
+                FIELD_START, r.getStart(), 
+                "end", r.getEnd() 
+        ));
+
+    }
 }
