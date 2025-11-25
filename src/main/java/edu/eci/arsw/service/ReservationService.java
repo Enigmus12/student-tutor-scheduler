@@ -14,7 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -81,15 +85,23 @@ public class ReservationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para modificar esta reserva");
         }
 
-        // impedir cancelación si ya está aceptada
-        if (newStatus == ReservationStatus.CANCELADO && r.getStatus() == ReservationStatus.ACEPTADO) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "No se puede cancelar una reserva que ya ha sido aceptada.");
-        }
-        // Solo se puede cancelar si está PENDIENTE
-        if (newStatus == ReservationStatus.CANCELADO && r.getStatus() != ReservationStatus.PENDIENTE) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Solo se pueden cancelar reservas con estado PENDIENTE.");
+        // Reglas para CANCELAR: permitir cancelar si está PENDIENTE o ACEPTADO,
+        // pero no si faltan menos de 24 horas para el inicio.
+        if (newStatus == ReservationStatus.CANCELADO) {
+            if (r.getStatus() != ReservationStatus.PENDIENTE && r.getStatus() != ReservationStatus.ACEPTADO) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Solo se pueden cancelar reservas con estado PENDIENTE o ACEPTADO.");
+            }
+
+            ZoneId zone = ZoneId.of("America/Bogota");
+            ZonedDateTime now = ZonedDateTime.now(zone);
+            ZonedDateTime start = ZonedDateTime.of(r.getDate(), r.getStart(), zone);
+            Duration untilStart = Duration.between(now, start);
+
+            if (untilStart.compareTo(Duration.ofHours(12)) < 0) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "No se puede cancelar con menos de 12 horas de antelación.");
+            }
         }
 
         // El tutor solo puede ACEPTAR si está PENDIENTE
