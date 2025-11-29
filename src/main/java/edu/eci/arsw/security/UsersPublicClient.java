@@ -32,6 +32,9 @@ public class UsersPublicClient {
 
     /**
      * Constructor del cliente de servicio de usuarios
+     * 
+     * @param cacheManager Gestor de caché
+     * @param baseUrl      URL base del servicio de usuarios
      */
     @Autowired
     public UsersPublicClient(
@@ -46,7 +49,13 @@ public class UsersPublicClient {
                 .build();
     }
 
-    /** Llama al endpoint público sin caché */
+    /**
+     * Llama al endpoint público sin caché
+     * 
+     * @param sub Sub del usuario
+     * @param id  ID del usuario
+     * @return Mono con el perfil público
+     */
     public Mono<PublicProfile> getPublicProfile(String sub, String id) {
         String subTrim = trimToNull(sub);
         String idTrim = trimToNull(id);
@@ -73,7 +82,13 @@ public class UsersPublicClient {
                                         || ex instanceof WebClientResponseException.Forbidden)));
     }
 
-    /** Con caché (igual patrón que getMyRolesCached) */
+    /**
+     * Llama al endpoint público con caché
+     * 
+     * @param sub Sub del usuario
+     * @param id  ID del usuario
+     * @return Perfil público
+     */
     public PublicProfile getPublicProfileCached(String sub, String id) {
         String subTrim = trimToNull(sub);
         String idTrim = trimToNull(id);
@@ -111,7 +126,12 @@ public class UsersPublicClient {
         }
     }
 
-    /** Trim a null si es vacío */
+    /**
+     * Recorta una cadena y la convierte a null si queda vacía
+     * 
+     * @param s Cadena de entrada
+     * @return Cadena recortada o null si está vacía
+     */
     private static String trimToNull(String s) {
         if (s == null)
             return null;
@@ -119,7 +139,12 @@ public class UsersPublicClient {
         return t.isEmpty() ? null : t;
     }
 
-    /** Convertir mapa bruto a PublicProfile */
+    /**
+     * Convertir mapa bruto a perfil público
+     * 
+     * @param raw Mapa con los datos del perfil
+     * @return Perfil público
+     */
     private PublicProfile toProfile(Map<String, Object> raw) {
         if (raw == null)
             return null;
@@ -137,12 +162,22 @@ public class UsersPublicClient {
         return p;
     }
 
-    /** Convertir objeto a cadena */
+    /**
+     * Convierte un objeto a cadena
+     * 
+     * @param o Objeto de entrada
+     * @return Cadena resultante
+     */
     private static String asString(Object o) {
         return o == null ? null : String.valueOf(o);
     }
 
-    /** Primera cadena no vacía */
+    /**
+     * Devuelve la primera cadena no vacía
+     * 
+     * @param xs Cadenas de entrada
+     * @return Primera cadena no vacía o null si todas están vacías
+     */
     private static String firstNonBlank(String... xs) {
         for (String s : xs)
             if (s != null && !s.isBlank())
@@ -150,7 +185,12 @@ public class UsersPublicClient {
         return null;
     }
 
-    /** Normalizar campos del perfil */
+    /**
+     * Normaliza el perfil público
+     * 
+     * @param in Perfil de entrada
+     * @return Perfil normalizado
+     */
     private PublicProfile normalize(PublicProfile in) {
         if (in == null)
             return null;

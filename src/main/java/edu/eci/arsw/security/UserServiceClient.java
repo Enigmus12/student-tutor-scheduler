@@ -31,6 +31,9 @@ public class UserServiceClient {
 
     /**
      * Constructor del cliente de servicio de usuarios
+     * 
+     * @param cacheManager Gestor de caché
+     * @param baseUrl      URL base del servicio de usuarios
      */
     @Autowired
     public UserServiceClient(CacheManager cacheManager,
@@ -44,6 +47,9 @@ public class UserServiceClient {
 
     /**
      * Obtener los roles del usuario autenticado
+     * 
+     * @param bearerHeader Header de autorización con el token Bearer
+     * @return Mono con la respuesta de roles
      */
     public Mono<RolesResponse> getMyRoles(String bearerHeader) {
         return webClient.get()
@@ -60,6 +66,9 @@ public class UserServiceClient {
 
     /**
      * Obtener los roles del usuario autenticado con caché
+     * 
+     * @param bearerHeader Header de autorización con el token Bearer
+     * @return RolesResponse con los roles del usuario
      */
     public RolesResponse getMyRolesCached(String bearerHeader) {
         if (bearerHeader == null || bearerHeader.isBlank()) {
@@ -93,6 +102,10 @@ public class UserServiceClient {
 
     /**
      * Obtener roles desde la caché
+     * 
+     * @param cache Caché de roles
+     * @param key   Clave del caché
+     * @return RolesResponse si está en caché, null en caso contrario
      */
     private RolesResponse getCachedRoles(Cache cache, String key) {
         if (cache == null)
@@ -106,6 +119,10 @@ public class UserServiceClient {
 
     /**
      * Evictar caché en caso de errores de autenticación
+     * 
+     * @param cache Caché de roles
+     * @param key   Clave del caché
+     * @param e     Excepción de respuesta del cliente web
      */
     private void evictOnAuthErrors(Cache cache, String key, WebClientResponseException e) {
         int status = e.getStatusCode().value();
@@ -116,6 +133,9 @@ public class UserServiceClient {
 
     /**
      * Evictar caché si está presente
+     * 
+     * @param cache Caché de roles
+     * @param key   Clave del caché
      */
     private void evictCacheIfPresent(Cache cache, String key) {
         if (cache != null)
@@ -124,6 +144,9 @@ public class UserServiceClient {
 
     /**
      * Normalizar los roles a mayúsculas
+     * 
+     * @param in RolesResponse de entrada
+     * @return RolesResponse normalizado
      */
     private RolesResponse normalize(RolesResponse in) {
         if (in == null)

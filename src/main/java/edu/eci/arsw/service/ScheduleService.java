@@ -26,6 +26,10 @@ public class ScheduleService {
 
     /**
      * Obtener el horario semanal de un tutor específico
+     * 
+     * @param tutorId   ID del tutor
+     * @param weekStart Fecha de inicio de la semana
+     * @return Lista de celdas del horario
      */
     public List<ScheduleCell> weekForTutor(String tutorId, LocalDate weekStart) {
         if (tutorId == null || tutorId.isBlank() || weekStart == null) {
@@ -45,21 +49,43 @@ public class ScheduleService {
 
         return buildResult(map, weekStart, weekEnd);
     }
-    /** Buscar franjas de disponibilidad en MongoDB */
+
+    /**
+     * Buscar franjas de disponibilidad en MongoDB
+     * 
+     * @param tutorId   ID del tutor
+     * @param weekStart Fecha de inicio de la semana
+     * @param weekEnd   Fecha de fin de la semana
+     * @return Lista de franjas de disponibilidad
+     */
     private List<AvailabilitySlot> findAvailabilitySlots(String tutorId, LocalDate weekStart, LocalDate weekEnd) {
         Query qAvail = Query.query(
                 Criteria.where("tutorId").is(tutorId)
                         .and("date").gte(weekStart).lte(weekEnd));
         return Optional.ofNullable(mongo.find(qAvail, AvailabilitySlot.class)).orElseGet(Collections::emptyList);
     }
-    /** Buscar reservas en MongoDB */
+
+    /**
+     * Buscar reservas en MongoDB
+     * 
+     * @param tutorId   ID del tutor
+     * @param weekStart Fecha de inicio de la semana
+     * @param weekEnd   Fecha de fin de la semana
+     * @return Lista de reservas
+     */
     private List<Reservation> findReservations(String tutorId, LocalDate weekStart, LocalDate weekEnd) {
         Query qRes = Query.query(
                 Criteria.where("tutorId").is(tutorId)
                         .and("date").gte(weekStart).lte(weekEnd));
         return Optional.ofNullable(mongo.find(qRes, Reservation.class)).orElseGet(Collections::emptyList);
     }
-    /** Aplicar franjas de disponibilidad al mapa */
+
+    /**
+     * Aplicar franjas de disponibilidad al mapa
+     * 
+     * @param map   Mapa de celdas del horario
+     * @param slots Lista de franjas de disponibilidad
+     */
     private void applyAvailability(Map<String, ScheduleCell> map, List<AvailabilitySlot> slots) {
         for (AvailabilitySlot s : slots) {
             if (s == null || s.getDate() == null || s.getStart() == null) {
@@ -70,7 +96,13 @@ public class ScheduleService {
             map.put(key, new ScheduleCell(s.getDate().toString(), hour.toString(), "DISPONIBLE", null, null));
         }
     }
-    /** Aplicar reservas al mapa */
+
+    /**
+     * Aplicar reservas al mapa
+     * 
+     * @param map          Mapa de celdas del horario
+     * @param reservations Lista de reservas
+     */
     private void applyReservations(Map<String, ScheduleCell> map, List<Reservation> reservations) {
         for (Reservation r : reservations) {
             if (r == null || r.getDate() == null || r.getStart() == null) {
@@ -89,7 +121,15 @@ public class ScheduleService {
             map.put(key, cell);
         }
     }
-    /** Construir la lista final de celdas del horario */
+
+    /**
+     * Construir la lista final de celdas del horario
+     * 
+     * @param map       Mapa de celdas del horario
+     * @param weekStart Fecha de inicio de la semana
+     * @param weekEnd   Fecha de fin de la semana
+     * @return Lista de celdas del horario
+     */
     private List<ScheduleCell> buildResult(Map<String, ScheduleCell> map, LocalDate weekStart, LocalDate weekEnd) {
         List<ScheduleCell> result = new ArrayList<>(7 * 24);
         for (LocalDate d = weekStart; !d.isAfter(weekEnd); d = d.plusDays(1)) {

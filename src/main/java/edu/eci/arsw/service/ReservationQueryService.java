@@ -19,13 +19,23 @@ public class ReservationQueryService {
     private final ReservationRepository reservationRepository;
     private final ReservationViewAssembler assembler;
 
-    /** Listar reservas por tutor */
+    /**
+     * Listar reservas por tutor
+     * 
+     * @param tutorId ID del tutor
+     * @return Lista de vistas de reservas del tutor
+     */
     public List<ReservationView> listByTutor(String tutorId) {
         List<Reservation> rs = reservationRepository.findByTutorIdOrderByDateAscStartAsc(tutorId);
         return rs.stream().map(assembler::toView).toList();
     }
 
-    /** Listar reservas por estudiante */
+    /**
+     * Listar reservas por estudiante
+     * 
+     * @param studentId ID del estudiante
+     * @return Lista de vistas de reservas del estudiante
+     */
     public List<ReservationView> listByStudent(String studentId) {
         List<Reservation> rs = reservationRepository.findByStudentIdOrderByDateAscStartAsc(studentId);
         return rs.stream().map(assembler::toView).toList();

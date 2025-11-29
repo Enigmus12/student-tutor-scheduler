@@ -38,6 +38,10 @@ public class AvailabilityController {
 
     /**
      * Crear franjas de disponibilidad en bloque
+     * 
+     * @param authorization Token de autorización
+     * @param req           Solicitud con las franjas a crear
+     * @return Lista de franjas creadas
      */
     @PostMapping("/bulk")
     public ResponseEntity<List<AvailabilitySlot>> bulk(
@@ -51,6 +55,11 @@ public class AvailabilityController {
 
     /**
      * Obtener las franjas de disponibilidad propias
+     * 
+     * @param authorization Token de autorización
+     * @param from          Fecha de inicio del rango
+     * @param to            Fecha de fin del rango
+     * @return Lista de franjas de disponibilidad
      */
     @GetMapping("/my")
     public ResponseEntity<List<AvailabilitySlot>> my(
@@ -64,6 +73,9 @@ public class AvailabilityController {
 
     /**
      * Eliminar una franja de disponibilidad propia
+     * 
+     * @param authorization Token de autorización
+     * @param slotId        ID de la franja a eliminar
      */
     @DeleteMapping("/{slotId}")
     public ResponseEntity<Void> delete(
@@ -84,39 +96,46 @@ public class AvailabilityController {
 
     /**
      * Reemplazar la disponibilidad de un día específico
+     * 
+     * @param authorization Token de autorización
+     * @param date          Fecha del día a reemplazar
+     * @param req           Solicitud con las horas nuevas
      */
     @PutMapping("/day/{date}")
     public ResponseEntity<Void> replaceDay(
-        @RequestHeader("Authorization") String authorization,
-        @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-        @Valid @RequestBody DayAvailabilityUpdateRequest req) {
+            @RequestHeader("Authorization") String authorization,
+            @PathVariable("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @Valid @RequestBody DayAvailabilityUpdateRequest req) {
 
-    authz.requireRole(authorization, TUTOR_ROLE);
-    RolesResponse me = authz.me(authorization);
+        authz.requireRole(authorization, TUTOR_ROLE);
+        RolesResponse me = authz.me(authorization);
 
-    // 1) Parsear horas solicitadas (puede ser lista vacía)
-    List<LocalTime> requestedHours = req.getHours().stream()
-        .map(h -> LocalTime.parse(h + ":00"))
-        .toList();
+        // Parsear horas solicitadas 
+        List<LocalTime> requestedHours = req.getHours().stream()
+                .map(h -> LocalTime.parse(h + ":00"))
+                .toList();
 
-    // 2) Cargar TODAS las horas existentes de disponibilidad ese día
-    List<AvailabilitySlot> existing = service.slotsForDay(me.getId(), date);
+        // Cargar TODAS las horas existentes de disponibilidad ese día
+        List<AvailabilitySlot> existing = service.slotsForDay(me.getId(), date);
 
-    // 3) Marcar como protegidas TODAS las horas del día que tengan reserva activa
-    java.util.Set<LocalTime> hoursWithRes = new java.util.HashSet<>();
-    for (AvailabilitySlot s : existing) {
-        if (reservationService.hasActiveReservationForTutorAt(me.getId(), date, s.getStart())) {
-        hoursWithRes.add(s.getStart());
+        // Marcar como protegidas TODAS las horas del día que tengan reserva activa
+        java.util.Set<LocalTime> hoursWithRes = new java.util.HashSet<>();
+        for (AvailabilitySlot s : existing) {
+            if (reservationService.hasActiveReservationForTutorAt(me.getId(), date, s.getStart())) {
+                hoursWithRes.add(s.getStart());
+            }
         }
-    }
 
-    // 4) Reemplazar (borrar lo que no esté en requestedHours ni protegido; crear nuevas)
-    service.replaceDay(me.getId(), date, requestedHours, hoursWithRes);
-    return ResponseEntity.noContent().build();
+        service.replaceDay(me.getId(), date, requestedHours, hoursWithRes);
+        return ResponseEntity.noContent().build();
     }
 
     /**
      * Agregar disponibilidad sin eliminar las existentes
+     * 
+     * @param authorization Token de autorización
+     * @param req           Solicitud con la fecha y las horas a agregar
+     * @return Mapa con información sobre la operación
      */
     @PostMapping("/add")
     public ResponseEntity<Map<String, Object>> addAvailability(
@@ -153,6 +172,9 @@ public class AvailabilityController {
 
     /**
      * Parsear una cadena de hora en formato "HH" o "HH:mm" a LocalTime
+     * 
+     * @param hourStr Cadena de hora
+     * @return LocalTime correspondiente
      */
     private LocalTime parseHour(String hourStr) {
         try {

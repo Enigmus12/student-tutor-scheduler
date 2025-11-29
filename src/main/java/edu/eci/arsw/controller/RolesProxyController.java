@@ -19,6 +19,9 @@ public class RolesProxyController {
 
     /**
      * Obtener los roles del usuario autenticado
+     * 
+     * @param authorization Token de autorización
+     * @return Roles del usuario
      */
     @GetMapping("/Api-user/my-roles")
     public ResponseEntity<RolesResponse> myRoles(@RequestHeader("Authorization") String authorization) {

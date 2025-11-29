@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+
 /** Vista de una reserva */
 @Data
 @NoArgsConstructor
@@ -24,12 +25,12 @@ public class ReservationView {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private LocalTime end;
 
-    private String status; 
+    private String status;
 
     /** si se reunieron o no (null = sin reportar) */
     private Boolean attended;
 
-    // Enriquecido desde /public/profile 
+    // Enriquecido desde /public/profile
     private String studentName;
     private String studentAvatar;
     private String tutorName;

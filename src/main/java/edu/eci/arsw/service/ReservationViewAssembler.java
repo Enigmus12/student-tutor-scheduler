@@ -19,7 +19,11 @@ public class ReservationViewAssembler {
     private final UsersPublicClient usersPublicClient;
 
     /**
-     * Convertir una entidad Reservation a una vista ReservationView con estados dinámicos.
+     * Convertir una entidad Reservation a una vista ReservationView con estados
+     * dinámicos.
+     * 
+     * @param r Reserva a convertir
+     * @return Vista de la reserva
      */
     public ReservationView toView(Reservation r) {
         PublicProfile student = usersPublicClient.getPublicProfileCached(null, r.getStudentId());
@@ -43,11 +47,15 @@ public class ReservationViewAssembler {
     }
 
     /**
-     * Calcula el estado final de la reserva para mostrar en el frontend.
+     * Calcula el estado final de la reserva
+     * 
+     * @param r Reserva
+     * @return Estado dinámico de la reserva
      */
     private String calculateDynamicStatus(Reservation r) {
         ReservationStatus storedStatus = r.getStatus();
-        if (storedStatus == null) return null;
+        if (storedStatus == null)
+            return null;
 
         // Si el estado es PENDIENTE o CANCELADO, no hay nada más que calcular.
         if (storedStatus == ReservationStatus.PENDIENTE || storedStatus == ReservationStatus.CANCELADO) {
@@ -59,13 +67,14 @@ public class ReservationViewAssembler {
         ZonedDateTime startTime = ZonedDateTime.of(r.getDate(), r.getStart(), ZONE);
         ZonedDateTime endTime = ZonedDateTime.of(r.getDate(), r.getEnd(), ZONE);
 
-        // Si la reserva está aceptada, verificamos si está activa, finalizada o incumplida.
+        // Si la reserva está aceptada, verificamos si está activa, finalizada o
+        // incumplida.
         if (storedStatus == ReservationStatus.ACEPTADO) {
-            //  para ACTIVA
+            // para ACTIVA
             if (now.isAfter(startTime) && now.isBefore(endTime)) {
                 return ReservationStatus.ACTIVA.name();
             }
-            
+
             // para FINALIZADA o INCUMPLIDA (si la clase ya terminó)
             if (now.isAfter(endTime)) {
                 if (Boolean.TRUE.equals(r.getAttended())) {
@@ -75,8 +84,9 @@ public class ReservationViewAssembler {
                 }
             }
         }
-        
-        // Si ninguna de las condiciones dinámicas se cumple, devuelve el estado guardado.
+
+        // Si ninguna de las condiciones dinámicas se cumple, devuelve el estado
+        // guardado.
         return storedStatus.name();
     }
 }

@@ -9,7 +9,12 @@ public class Sha256 {
     private Sha256() {
     }
 
-    /** Genera el hash SHA-256 de una cadena */
+    /**
+     * Genera el hash SHA-256 de una cadena
+     * 
+     * @param input Cadena de entrada
+     * @return Hash SHA-256 en formato hexadecimal
+     */
     public static String hash(String input) {
         if (input == null)
             return "NULL";

@@ -6,14 +6,24 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-/** Aplicación principal de Spring Boot para el programador de tutorías estudiantiles */
+
+/**
+ * Aplicación principal de Spring Boot para el programador de tutorías
+ * estudiantiles
+ */
 @SpringBootApplication
 public class StudentTutorSchedulerApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(StudentTutorSchedulerApplication.class, args);
     }
-    /** Configuración de CORS */
+
+    /**
+     * Configuración de CORS
+     * 
+     * @param allowedOrigins Orígenes permitidos desde application.properties
+     * @return Configuración de CORS
+     */
     @Bean
     public WebMvcConfigurer corsConfigurer(@Value("${app.cors.allowed-origins}") String allowedOrigins) {
         return new WebMvcConfigurer() {
@@ -21,7 +31,7 @@ public class StudentTutorSchedulerApplication {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins(allowedOrigins.split(","))
-                        .allowedMethods("GET","POST","PUT","PATCH","DELETE","OPTIONS")
+                        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowCredentials(true);
             }
         };

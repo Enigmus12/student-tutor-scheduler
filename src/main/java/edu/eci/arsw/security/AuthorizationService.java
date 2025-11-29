@@ -25,6 +25,9 @@ public class AuthorizationService {
 
     /**
      * Verifica si el usuario tiene alguno de los roles necesarios
+     * 
+     * @param bearer Token de autorización
+     * @param needed Roles necesarios
      */
     public boolean hasAnyRole(String bearer, String... needed) {
         RolesResponse rr = client.getMyRolesCached(bearer);
@@ -44,6 +47,10 @@ public class AuthorizationService {
 
     /**
      * Requiere que el usuario tenga alguno de los roles necesarios, o lanza 403
+     * 
+     * @param bearer Token de autorización
+     * @param needed Roles necesarios
+     * @throws ResponseStatusException si no tiene los roles necesarios
      */
     public void requireRole(String bearer, String... needed) {
         if (!hasAnyRole(bearer, needed)) {
@@ -53,6 +60,9 @@ public class AuthorizationService {
 
     /**
      * Obtener los roles del usuario autenticado
+     * 
+     * @param bearer Token de autorización
+     * @return Roles del usuario
      */
     public RolesResponse me(String bearer) {
         return client.getMyRolesCached(bearer);
@@ -60,6 +70,9 @@ public class AuthorizationService {
 
     /**
      * Extraer el "sub" del JWT en el header Authorization
+     * 
+     * @param bearer Token de autorización
+     * @return El "sub" del JWT
      */
     public String subject(String bearer) {
         String token = extractToken(bearer);
@@ -85,6 +98,9 @@ public class AuthorizationService {
 
     /**
      * Extraer el token del header Authorization
+     * 
+     * @param bearer Token de autorización
+     * @return El token sin el prefijo "Bearer "
      */
     private static String extractToken(String bearer) {
         if (bearer == null || bearer.isBlank())

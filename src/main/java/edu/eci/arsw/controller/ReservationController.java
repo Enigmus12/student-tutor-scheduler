@@ -32,7 +32,6 @@ public class ReservationController {
     private final AuthorizationService authz;
     private final MongoTemplate mongo;
 
-    // Constantes para evitar duplicación de literales
     private static final String FIELD_STUDENT_ID = "studentId";
     private static final String FIELD_TUTOR_ID = "tutorId";
     private static final String FIELD_DATE = "date";
@@ -40,7 +39,13 @@ public class ReservationController {
     private static final String ROLE_STUDENT = "STUDENT";
     private static final String ROLE_TUTOR = "TUTOR";
 
-    /** Crear una nueva reserva */
+    /**
+     * Crear una nueva reserva
+     * 
+     * @param authorization Token de autorización
+     * @param req           Solicitud con los datos de la reserva
+     * @return Reserva creada
+     */
     @PostMapping
     public ResponseEntity<Reservation> create(
             @RequestHeader("Authorization") String authorization,
@@ -50,7 +55,14 @@ public class ReservationController {
         return ResponseEntity.ok(service.create(me.getId(), req));
     }
 
-    /** Obtener mis reservas como estudiante */
+    /**
+     * Obtener mis reservas como estudiante
+     * 
+     * @param authorization Token de autorización
+     * @param from          Fecha de inicio del rango
+     * @param to            Fecha de fin del rango
+     * @return Lista de reservas
+     */
     @GetMapping("/my")
     public List<Reservation> my(
             @RequestHeader("Authorization") String authorization,
@@ -71,7 +83,14 @@ public class ReservationController {
         return mongo.find(q, Reservation.class);
     }
 
-    /** Obtener mis reservas como tutor */
+    /**
+     * Obtener mis reservas como tutor
+     * 
+     * @param authorization Token de autorización
+     * @param from          Fecha de inicio del rango
+     * @param to            Fecha de fin del rango
+     * @return Lista de reservas
+     */
     @GetMapping("/for-me")
     public List<Reservation> forMe(
             @RequestHeader("Authorization") String authorization,
@@ -92,7 +111,13 @@ public class ReservationController {
         return mongo.find(q, Reservation.class);
     }
 
-    /** Cancelar una reserva (estudiante o tutor) */
+    /**
+     * Cancelar una reserva (estudiante o tutor)
+     * 
+     * @param authorization Token de autorización
+     * @param id            ID de la reserva
+     * @return Reserva actualizada
+     */
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<Reservation> cancel(
             @RequestHeader("Authorization") String authorization,
@@ -101,7 +126,13 @@ public class ReservationController {
         return ResponseEntity.ok(service.changeStatusByStudentOrTutor(me.getId(), id, ReservationStatus.CANCELADO));
     }
 
-    /** Aceptar una reserva (tutor) */
+    /**
+     * Aceptar una reserva (tutor)
+     * 
+     * @param authorization Token de autorización
+     * @param id            ID de la reserva
+     * @return Reserva actualizada
+     */
     @PatchMapping("/{id}/accept")
     public ResponseEntity<Reservation> accept(
             @RequestHeader("Authorization") String authorization,
@@ -111,7 +142,13 @@ public class ReservationController {
         return ResponseEntity.ok(service.changeStatusByStudentOrTutor(me.getId(), id, ReservationStatus.ACEPTADO));
     }
 
-    /** Marcar asistencia a una reserva (tutor) */
+    /**
+     * Marcar asistencia a una reserva (tutor)
+     * 
+     * @param authorization Token de autorización
+     * @param id            ID de la reserva
+     * @return Reserva actualizada
+     */
     @PatchMapping("/{id}/attended")
     public ResponseEntity<Reservation> attended(
             @RequestHeader("Authorization") String authorization,
@@ -125,7 +162,7 @@ public class ReservationController {
      * Verificar si el usuario autenticado puede chatear con otro usuario
      * 
      * El usuario debe estar autenticado (token válido)
-     * Debe existir al menos una reserva ACEPTADA o INCUMPLIDA entre ambos
+     * Debe existir al menos una reserva ACEPTADA , ACTIVA o INCUMPLIDA entre ambos
      * El usuario autenticado debe ser parte de esa reserva (como estudiante o
      * tutor)
      * 
@@ -163,7 +200,7 @@ public class ReservationController {
                         Criteria.where(FIELD_TUTOR_ID).is(myId),
                         Criteria.where(FIELD_STUDENT_ID).is(withUserId))));
 
-        // Solo permitir chat si hay reservas ACEPTADAS o INCUMPLIDAS
+        // Solo permitir chat si hay reservas ACEPTADAS,  ACTIVAS o  INCUMPLIDAS
         q.addCriteria(Criteria.where("status").in(
                 ReservationStatus.ACEPTADO,
                 ReservationStatus.INCUMPLIDA));
@@ -186,7 +223,13 @@ public class ReservationController {
                         .toList()));
     }
 
-    /** Obtener una reserva por ID */
+    /**
+     * Obtener una reserva por ID
+     * 
+     * @param authorization Token de autorización
+     * @param id            ID de la reserva
+     * @return Reserva actualizada
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getOne(
             @RequestHeader("Authorization") String authorization,
@@ -209,13 +252,12 @@ public class ReservationController {
 
         return ResponseEntity.ok(Map.of(
                 "id", r.getId(),
-                "status", r.getStatus().name(), 
+                "status", r.getStatus().name(),
                 FIELD_STUDENT_ID, r.getStudentId(),
                 FIELD_TUTOR_ID, r.getTutorId(),
-                "date", r.getDate(), 
-                FIELD_START, r.getStart(), 
-                "end", r.getEnd() 
-        ));
+                "date", r.getDate(),
+                FIELD_START, r.getStart(),
+                "end", r.getEnd()));
 
     }
 }
