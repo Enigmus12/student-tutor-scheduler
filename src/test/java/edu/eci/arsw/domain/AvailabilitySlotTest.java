@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class AvailabilitySlotTest {
 
     @Test
-    void builderShouldPopulateAllFields() {
+    void builderShouldPopulateAllFieldsAndBuilderToString() {
         LocalDate date = LocalDate.of(2025, 1, 1);
         LocalTime start = LocalTime.of(8, 0);
         LocalTime end = LocalTime.of(9, 0);
@@ -35,10 +35,16 @@ class AvailabilitySlotTest {
         assertEquals(end, slot.getEnd());
         assertEquals(created, slot.getCreatedAt());
         assertEquals(updated, slot.getUpdatedAt());
+
+        String builderString = AvailabilitySlot.builder()
+                .id("X")
+                .tutorId("T")
+                .toString();
+        assertNotNull(builderString);
     }
 
     @Test
-    void settersEqualsAndHashCodeShouldWork() {
+    void settersEqualsHashCodeToStringAndCanEqualShouldBeCovered() {
         LocalDate date = LocalDate.of(2025, 2, 2);
         LocalTime start = LocalTime.of(10, 0);
         LocalTime end = LocalTime.of(11, 0);
@@ -53,26 +59,40 @@ class AvailabilitySlotTest {
         AvailabilitySlot b = new AvailabilitySlot("id", "tutor", date, start, end, null, null);
 
         assertEquals(a, b);
+        assertEquals(a, a);
         assertEquals(a.hashCode(), b.hashCode());
+        assertNotEquals(null, a);
+        assertNotEquals("otro tipo", a);
 
-        // ramas de equals: null y tipo distinto
-        assertNotEquals(a, null);
-        assertNotEquals(a, "otro tipo");
+        assertTrue(a.canEqual(b));
+        assertFalse(a.canEqual(new Object()));
 
-        // si cambiamos algún campo ya no deben ser iguales
+        class BadSlot extends AvailabilitySlot {
+            @Override
+            protected boolean canEqual(Object other) {
+                return false;
+            }
+        }
+        AvailabilitySlot bad = new BadSlot();
+        bad.setId("id");
+        bad.setTutorId("tutor");
+
+        assertNotEquals(a, bad);
+
         b.setTutorId("otro");
         assertNotEquals(a, b);
+
+        String ts = a.toString();
+        assertTrue(ts.contains("id"));
+        assertTrue(ts.contains("tutor"));
     }
 
     @Test
-    void toStringShouldContainKeyFields() {
-        AvailabilitySlot slot = AvailabilitySlot.builder()
-                .id("slot-2")
-                .tutorId("tutor-2")
-                .build();
+    void equalsAndHashCodeForEmptySlots() {
+        AvailabilitySlot a = new AvailabilitySlot();
+        AvailabilitySlot b = new AvailabilitySlot();
 
-        String ts = slot.toString();
-        assertTrue(ts.contains("slot-2"));
-        assertTrue(ts.contains("tutor-2"));
+        assertEquals(a, b);
+        assertEquals(a.hashCode(), b.hashCode());
     }
 }

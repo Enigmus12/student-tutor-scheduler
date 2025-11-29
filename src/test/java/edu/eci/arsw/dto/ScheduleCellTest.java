@@ -43,4 +43,16 @@ class ScheduleCellTest {
         assertTrue(ts.contains("2025-02-02"));
         assertTrue(ts.contains("ACTIVA"));
     }
+
+    @Test
+    void equalsShouldDetectDifferences() {
+        ScheduleCell base = new ScheduleCell("2025-02-02", "09:00", "ACTIVA", "r-1", "s-1");
+        ScheduleCell diffDate = new ScheduleCell("2025-02-03", "09:00", "ACTIVA", "r-1", "s-1");
+        ScheduleCell diffHour = new ScheduleCell("2025-02-02", "10:00", "ACTIVA", "r-1", "s-1");
+        ScheduleCell diffStatus = new ScheduleCell("2025-02-02", "09:00", "CANCELADO", "r-1", "s-1");
+
+        assertNotEquals(base, diffDate);
+        assertNotEquals(base, diffHour);
+        assertNotEquals(base, diffStatus);
+    }
 }

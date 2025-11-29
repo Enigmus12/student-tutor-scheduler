@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RolesResponseTest {
 
     @Test
-    void gettersAndSettersShouldWork() {
+    void gettersSettersEqualsHashCodeToStringAndCanEqualShouldBeCovered() {
         RolesResponse rr = new RolesResponse();
         rr.setId("1");
         rr.setEmail("user@example.com");
@@ -24,17 +24,6 @@ class RolesResponseTest {
         assertEquals(List.of("STUDENT"), rr.getRoles());
         assertTrue(rr.isHasRoles());
         assertEquals("now", rr.getLastUpdated());
-    }
-
-    @Test
-    void equalsHashCodeAndToStringShouldBeCovered() {
-        RolesResponse a = new RolesResponse();
-        a.setId("1");
-        a.setEmail("user@example.com");
-        a.setName("User");
-        a.setRoles(List.of("STUDENT"));
-        a.setHasRoles(true);
-        a.setLastUpdated("now");
 
         RolesResponse b = new RolesResponse();
         b.setId("1");
@@ -47,15 +36,40 @@ class RolesResponseTest {
         RolesResponse c = new RolesResponse();
         c.setId("2");
 
-        assertEquals(a, b);
-        assertEquals(a.hashCode(), b.hashCode());
+        assertEquals(rr, b);
+        assertEquals(rr, rr);              
+        assertEquals(rr.hashCode(), b.hashCode());
+        assertNotEquals(c, rr);
+        assertNotEquals(null, rr);
+        assertNotEquals("otro tipo", rr);
 
-        assertNotEquals(a, c);
-        assertNotEquals(null, a);
-        assertNotEquals("otro tipo", a);
+        assertTrue(rr.canEqual(b));
+        assertFalse(rr.canEqual(new Object()));
 
-        String s = a.toString();
+        class BadRolesResponse extends RolesResponse {
+            @Override
+            protected boolean canEqual(Object other) {
+                return false;
+            }
+        }
+        RolesResponse bad = new BadRolesResponse();
+        bad.setId("1");
+        bad.setEmail("user@example.com");
+        bad.setName("User");
+
+        assertNotEquals(rr, bad);
+
+        String s = rr.toString();
         assertNotNull(s);
         assertTrue(s.contains("RolesResponse"));
+    }
+
+    @Test
+    void equalsAndHashCodeForEmptyInstances() {
+        RolesResponse a = new RolesResponse();
+        RolesResponse b = new RolesResponse();
+
+        assertEquals(a, b);                
+        assertEquals(a.hashCode(), b.hashCode());
     }
 }

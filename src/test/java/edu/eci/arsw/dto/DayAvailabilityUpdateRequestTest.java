@@ -34,4 +34,15 @@ class DayAvailabilityUpdateRequestTest {
         String ts = a.toString();
         assertTrue(ts.contains("08:00"));
     }
+
+    @Test
+    void equalsShouldDetectDifferentHours() {
+        DayAvailabilityUpdateRequest a = new DayAvailabilityUpdateRequest();
+        a.setHours(List.of("08:00"));
+
+        DayAvailabilityUpdateRequest b = new DayAvailabilityUpdateRequest();
+        b.setHours(List.of("09:00"));
+
+        assertNotEquals(a, b);
+    }
 }
