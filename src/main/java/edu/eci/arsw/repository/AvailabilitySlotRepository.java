@@ -9,8 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio para gestionar los intervalos de disponibilidad de tutores en la
- * base de datos MongoDB
+ * Repositorio para gestionar los intervalos de disponibilidad de tutores 
  */
 public interface AvailabilitySlotRepository extends MongoRepository<AvailabilitySlot, String> {
     List<AvailabilitySlot> findByTutorIdAndDateBetween(String tutorId, LocalDate from, LocalDate to);

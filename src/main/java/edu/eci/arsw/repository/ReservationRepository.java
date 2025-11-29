@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio para gestionar reservas en la base de datos MongoDB
+ * Repositorio para gestionar reservas 
  */
 public interface ReservationRepository extends MongoRepository<Reservation, String> {
     List<Reservation> findByStudentIdAndDateBetween(String studentId, LocalDate from, LocalDate to);

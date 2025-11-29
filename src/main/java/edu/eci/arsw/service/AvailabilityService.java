@@ -30,6 +30,10 @@ public class AvailabilityService {
 
     /**
      * Crear franjas de disponibilidad en bloque
+     * 
+     * @param tutorId ID del tutor
+     * @param req     Solicitud de franjas de disponibilidad en bloque
+     * @return Lista de franjas creadas
      */
     public List<AvailabilitySlot> bulkCreate(String tutorId, BulkAvailabilityRequest req) {
         if (req.getFromDate().isAfter(req.getToDate())) {
@@ -70,6 +74,11 @@ public class AvailabilityService {
 
     /**
      * Obtener las franjas de disponibilidad propias en un rango de fechas
+     * 
+     * @param tutorId ID del tutor
+     * @param from    Fecha de inicio
+     * @param to      Fecha de fin
+     * @return Lista de franjas de disponibilidad
      */
     public List<AvailabilitySlot> mySlots(String tutorId, LocalDate from, LocalDate to) {
         return repo.findByTutorIdAndDateGreaterThanEqualAndDateLessThanEqual(tutorId, from, to);
@@ -77,6 +86,9 @@ public class AvailabilityService {
 
     /**
      * Eliminar una franja de disponibilidad propia
+     * 
+     * @param tutorId ID del tutor
+     * @param slotId  ID de la franja a eliminar
      */
     public void deleteOwnSlot(String tutorId, String slotId, boolean hasActiveReservation) {
         AvailabilitySlot slot = repo.findById(slotId)
@@ -93,6 +105,11 @@ public class AvailabilityService {
 
     /**
      * Reemplazar las franjas de disponibilidad de un día específico
+     * 
+     * @param tutorId            ID del tutor
+     * @param date               Fecha del día a reemplazar
+     * @param hours              Nuevas horas de disponibilidad
+     * @param hoursWithActiveRes Horas con reservas activas que no se deben eliminar
      */
     public void replaceDay(String tutorId, LocalDate date, List<LocalTime> hours, Set<LocalTime> hoursWithActiveRes) {
         for (LocalTime h : hours) {
@@ -121,6 +138,9 @@ public class AvailabilityService {
     /**
      * Agregar disponibilidad sin eliminar las franjas existentes
      * 
+     * @param tutorId ID del tutor
+     * @param date    Fecha del día para agregar disponibilidad
+     * @param hours   Horas a agregar
      * @return número de franjas realmente agregadas (excluyendo duplicados)
      */
     @Transactional
@@ -182,6 +202,14 @@ public class AvailabilityService {
 
         return added;
     }
+
+    /**
+     * Obtener las franjas de disponibilidad de un día específico
+     * 
+     * @param tutorId ID del tutor
+     * @param date    Fecha del día
+     * @return Lista de franjas de disponibilidad
+     */
     public List<AvailabilitySlot> slotsForDay(String tutorId, LocalDate date) {
         return repo.findByTutorIdAndDate(tutorId, date);
     }

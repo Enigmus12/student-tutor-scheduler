@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -29,9 +28,14 @@ public class ReservationService {
 
     private final ReservationRepository repo;
     private final AvailabilitySlotRepository avRepo;
+    private static final ZoneId BOGOTA_ZONE = ZoneId.of("America/Bogota");
 
     /**
-     * Crear una nueva reserva.
+     * Crear una nueva reserva
+     * 
+     * @param studentId ID del estudiante que crea la reserva
+     * @param req       Solicitud de creación de reserva
+     * @return Reserva creada
      */
     public Reservation create(String studentId, ReservationCreateRequest req) {
         LocalDate date = req.getDate();
@@ -43,7 +47,7 @@ public class ReservationService {
         if (studentId.equals(req.getTutorId()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "El tutor no puede ser el mismo que el estudiante");
-        if (TimeUtils.isPast(date, start, java.time.ZoneId.of("America/Bogota")))
+        if (TimeUtils.isPast(date, start, BOGOTA_ZONE))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede reservar en una hora pasada");
 
         avRepo.findByTutorIdAndDateAndStart(req.getTutorId(), date, start)
@@ -72,7 +76,12 @@ public class ReservationService {
     }
 
     /**
-     * Cambiar el estado de una reserva (lógica de cancelación actualizada).
+     * Cambiar el estado de una reserva
+     * 
+     * @param actorId   ID del usuario que realiza el cambio (estudiante o tutor)
+     * @param id        ID de la reserva
+     * @param newStatus Nuevo estado de la reserva
+     * @return Reserva actualizada
      */
     public Reservation changeStatusByStudentOrTutor(String actorId, String id, ReservationStatus newStatus) {
         Reservation r = repo.findById(id)
@@ -86,7 +95,7 @@ public class ReservationService {
         }
 
         // Reglas para CANCELAR: permitir cancelar si está PENDIENTE o ACEPTADO,
-        // pero no si faltan menos de 24 horas para el inicio.
+        // pero no si faltan menos de 12 horas para el inicio.
         if (newStatus == ReservationStatus.CANCELADO) {
             if (r.getStatus() != ReservationStatus.PENDIENTE && r.getStatus() != ReservationStatus.ACEPTADO) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -117,6 +126,12 @@ public class ReservationService {
     /**
      * Verificar si un tutor tiene una reserva que bloquea su horario.
      * Una reserva PENDIENTE o ACEPTADA se considera que bloquea la disponibilidad.
+     * 
+     * @param tutorId ID del tutor
+     * @param date    Fecha de la reserva
+     * @param start   Hora de inicio de la reserva
+     * @return true si hay una reserva activa que bloquea el horario, false en caso
+     *         contrario
      */
     public boolean hasActiveReservationForTutorAt(String tutorId, LocalDate date, LocalTime start) {
         return repo.findByTutorIdAndDateAndStart(tutorId, date, start)
@@ -126,6 +141,11 @@ public class ReservationService {
 
     /**
      * Marcar asistencia (tutor).
+     * 
+     * @param actorId  ID del actor (debe ser el tutor)
+     * @param id       ID de la reserva
+     * @param attended Indica si el estudiante asistió
+     * @return Reserva actualizada
      */
     public Reservation setAttended(String actorId, String id, Boolean attended) {
         Reservation r = repo.findById(id)
@@ -143,7 +163,7 @@ public class ReservationService {
                     "Solo se puede marcar asistencia en clases aceptadas.");
         }
 
-        if (!TimeUtils.isPast(r.getDate(), r.getEnd(), java.time.ZoneId.of("America/Bogota"))) {
+        if (!TimeUtils.isPast(r.getDate(), r.getEnd(), BOGOTA_ZONE)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "No se puede marcar asistencia hasta que la clase haya finalizado.");
         }
@@ -154,16 +174,36 @@ public class ReservationService {
         return repo.save(r);
     }
 
-    /** Obtener mis reservas como estudiante */
+    /**
+     * Obtener mis reservas como estudiante
+     * 
+     * @param studentId ID del estudiante
+     * @param from      Fecha de inicio
+     * @param to        Fecha de fin
+     * @return Lista de reservas del estudiante
+     */
     public List<Reservation> myReservations(String studentId, LocalDate from, LocalDate to) {
         return repo.findByStudentIdAndDateBetween(studentId, from, to);
     }
 
-    /** Obtener mis reservas como tutor */
+    /**
+     * Obtener mis reservas como tutor
+     * 
+     * @param tutorId ID del tutor
+     * @param from    Fecha de inicio
+     * @param to      Fecha de fin
+     * @return Lista de reservas del tutor
+     */
     public List<Reservation> reservationsForTutor(String tutorId, LocalDate from, LocalDate to) {
         return repo.findByTutorIdAndDateGreaterThanEqualAndDateLessThanEqual(tutorId, from, to);
     }
-    /** Obtener una reserva por ID */
+
+    /**
+     * Obtener una reserva por ID
+     * 
+     * @param id ID de la reserva
+     * @return Reserva encontrada
+     */
     public Optional<Reservation> findById(String id) {
         return repo.findById(id);
     }

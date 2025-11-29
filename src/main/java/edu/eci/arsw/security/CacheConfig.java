@@ -18,43 +18,47 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 @EnableCaching
 public class CacheConfig {
-    
-    /** Configuración del caché rolesByBearer */
-    @Bean
-    public CacheManager cacheManager(Environment env) {
-        // Configuración del caché rolesByBearer
-        int rolesTtl = Integer.parseInt(env.getProperty("roles.cache.ttl-seconds", "240"));
-        int rolesMaxSize = Integer.parseInt(env.getProperty("roles.cache.max-size", "10000"));
 
-        Caffeine<Object, Object> rolesCaffeine = Caffeine.newBuilder()
-                .maximumSize(rolesMaxSize)
-                .expireAfterWrite(rolesTtl, TimeUnit.SECONDS)
-                .recordStats();
+        /**
+         * Configuración del caché rolesByBearer
+         * 
+         * @return Gestor de cachés
+         */
+        @Bean
+        public CacheManager cacheManager(Environment env) {
+                // Configuración del caché rolesByBearer
+                int rolesTtl = Integer.parseInt(env.getProperty("roles.cache.ttl-seconds", "240"));
+                int rolesMaxSize = Integer.parseInt(env.getProperty("roles.cache.max-size", "10000"));
 
-        CaffeineCache rolesCache = new CaffeineCache("rolesByBearer", rolesCaffeine.build());
+                Caffeine<Object, Object> rolesCaffeine = Caffeine.newBuilder()
+                                .maximumSize(rolesMaxSize)
+                                .expireAfterWrite(rolesTtl, TimeUnit.SECONDS)
+                                .recordStats();
 
-        // userPublicProfiles (para /public/profile)
-        // Permite configurar TTL y tamaño propios. Si no se especifican, hereda los de
-        // roles.
-        int profilesTtl = Integer.parseInt(
-                env.getProperty("profiles.cache.ttl-seconds",
-                        env.getProperty("userPublicProfiles.cache.ttl-seconds", String.valueOf(rolesTtl))));
-        int profilesMaxSize = Integer.parseInt(
-                env.getProperty("profiles.cache.max-size",
-                        env.getProperty("userPublicProfiles.cache.max-size", String.valueOf(rolesMaxSize))));
+                CaffeineCache rolesCache = new CaffeineCache("rolesByBearer", rolesCaffeine.build());
 
-        Caffeine<Object, Object> profilesCaffeine = Caffeine.newBuilder()
-                .maximumSize(profilesMaxSize)
-                .expireAfterWrite(profilesTtl, TimeUnit.SECONDS)
-                .recordStats();
+                // userPublicProfiles (para /public/profile)
+                int profilesTtl = Integer.parseInt(
+                                env.getProperty("profiles.cache.ttl-seconds",
+                                                env.getProperty("userPublicProfiles.cache.ttl-seconds",
+                                                                String.valueOf(rolesTtl))));
+                int profilesMaxSize = Integer.parseInt(
+                                env.getProperty("profiles.cache.max-size",
+                                                env.getProperty("userPublicProfiles.cache.max-size",
+                                                                String.valueOf(rolesMaxSize))));
 
-        CaffeineCache profilesCache = new CaffeineCache("userPublicProfiles", profilesCaffeine.build());
+                Caffeine<Object, Object> profilesCaffeine = Caffeine.newBuilder()
+                                .maximumSize(profilesMaxSize)
+                                .expireAfterWrite(profilesTtl, TimeUnit.SECONDS)
+                                .recordStats();
 
-        // Registrar ambos cachés
-        SimpleCacheManager manager = new SimpleCacheManager();
-        manager.setCaches(Arrays.asList(
-                rolesCache,
-                profilesCache));
-        return manager;
-    }
+                CaffeineCache profilesCache = new CaffeineCache("userPublicProfiles", profilesCaffeine.build());
+
+                // Registrar ambos cachés
+                SimpleCacheManager manager = new SimpleCacheManager();
+                manager.setCaches(Arrays.asList(
+                                rolesCache,
+                                profilesCache));
+                return manager;
+        }
 }

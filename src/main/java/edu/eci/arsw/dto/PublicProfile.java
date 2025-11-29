@@ -1,6 +1,7 @@
 package edu.eci.arsw.dto;
 
 import lombok.*;
+
 /** Perfil público de un usuario */
 @Data
 @NoArgsConstructor

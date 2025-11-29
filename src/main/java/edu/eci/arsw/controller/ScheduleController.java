@@ -27,13 +27,17 @@ public class ScheduleController {
 
     /**
      * Obtener el horario semanal de un tutor específico
+     * 
+     * @param authorization Token de autorización
+     * @param tutorId       ID del tutor
+     * @param weekStart     Fecha de inicio de la semana
+     * @return Lista de celdas del horario
      */
     @GetMapping("/tutor/{tutorId}")
     public ResponseEntity<List<ScheduleCell>> week(
             @RequestHeader("Authorization") String authorization,
             @PathVariable("tutorId") String tutorId,
             @RequestParam("weekStart") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart) {
-        // Verificar que el usuario tenga el rol de STUDENT o TUTOR
         authz.requireRole(authorization, "STUDENT", "TUTOR");
         List<ScheduleCell> schedule = service.weekForTutor(tutorId, weekStart);
         return ResponseEntity.ok(schedule);

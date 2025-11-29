@@ -1,4 +1,3 @@
-// src/main/java/edu/eci/arsw/infra/MongoConfig.java
 package edu.eci.arsw.infra;
 
 import org.springframework.context.annotation.Bean;
@@ -18,7 +17,11 @@ public class MongoConfig {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    /** Registrar conversiones personalizadas */
+    /**
+     * Registrar conversiones personalizadas
+     * 
+     * @return Conversiones personalizadas para MongoDB
+     */
     @Bean
     public MongoCustomConversions customConversions() {
         return new MongoCustomConversions(Arrays.asList(
@@ -28,7 +31,11 @@ public class MongoConfig {
                 new StringToLocalDateConverter()));
     }
 
-    /** Convierte LocalTime a "HH:mm" para MongoDB */
+    /**
+     * Convierte LocalTime a "HH:mm" para MongoDB
+     * 
+     * @return Hora formateada como cadena
+     */
     static class LocalTimeToStringConverter implements Converter<LocalTime, String> {
         @Override
         public String convert(LocalTime source) {
@@ -36,7 +43,11 @@ public class MongoConfig {
         }
     }
 
-    /** Convierte String ("HH:mm" o "HH:mm:ss") a LocalTime */
+    /**
+     * Convierte String ("HH:mm" o "HH:mm:ss") a LocalTime
+     * 
+     * @return Objeto LocalTime
+     */
     static class StringToLocalTimeConverter implements Converter<String, LocalTime> {
         @Override
         public LocalTime convert(String source) {
@@ -47,7 +58,11 @@ public class MongoConfig {
         }
     }
 
-    /** Convierte LocalDate a "yyyy-MM-dd" para MongoDB */
+    /**
+     * Convierte LocalDate a "yyyy-MM-dd" para MongoDB
+     * 
+     * @return Fecha formateada como cadena
+     */
     static class LocalDateToStringConverter implements Converter<LocalDate, String> {
         @Override
         public String convert(LocalDate source) {
@@ -55,7 +70,11 @@ public class MongoConfig {
         }
     }
 
-    /** Convierte String ("yyyy-MM-dd") a LocalDate */
+    /**
+     * Convierte String ("yyyy-MM-dd") a LocalDate
+     * 
+     * @return Objeto LocalDate
+     */
     static class StringToLocalDateConverter implements Converter<String, LocalDate> {
         @Override
         public LocalDate convert(String source) {
