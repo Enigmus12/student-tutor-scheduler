@@ -1,3 +1,4 @@
+// src/test/java/edu/eci/arsw/domain/ReservationTest.java
 package edu.eci.arsw.domain;
 
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ReservationTest {
 
     @Test
-    void builderShouldPopulateAllFields() {
+    void builderShouldPopulateAllFieldsAndBuilderToString() {
         LocalDate date = LocalDate.of(2025, 3, 3);
         LocalTime start = LocalTime.of(14, 0);
         LocalTime end = LocalTime.of(15, 0);
@@ -43,10 +44,17 @@ class ReservationTest {
         assertEquals(created, r.getCreatedAt());
         assertEquals(updated, r.getUpdatedAt());
         assertEquals(1L, r.getVersion());
+
+        String builderString = Reservation.builder()
+                .id("X")
+                .tutorId("T")
+                .studentId("S")
+                .toString();
+        assertNotNull(builderString);
     }
 
     @Test
-    void settersEqualsAndHashCodeShouldWork() {
+    void settersEqualsHashCodeToStringAndCanEqualShouldBeCovered() {
         LocalDate date = LocalDate.of(2025, 4, 4);
         LocalTime start = LocalTime.of(9, 0);
 
@@ -72,26 +80,48 @@ class ReservationTest {
                 .build();
 
         assertEquals(a, b);
+        assertEquals(a, a);
         assertEquals(a.hashCode(), b.hashCode());
-
         assertNotEquals(null, a);
         assertNotEquals("otro tipo", a);
 
+        assertTrue(a.canEqual(b));
+        assertFalse(a.canEqual(new Object()));
+
+        class BadReservation extends Reservation {
+            @Override
+            protected boolean canEqual(Object other) {
+                return false;
+            }
+        }
+        Reservation bad = new BadReservation();
+        bad.setId("id");
+        bad.setTutorId("t1");
+
+        assertNotEquals(a, bad);
+
         b.setStudentId("otro");
         assertNotEquals(a, b);
+
+        String ts = a.toString();
+        assertTrue(ts.contains("id"));
+        assertTrue(ts.contains("t1"));
+        assertTrue(ts.contains("s1"));
     }
 
     @Test
-    void toStringShouldContainIds() {
-        Reservation r = Reservation.builder()
-                .id("res-2")
-                .tutorId("t-2")
-                .studentId("s-2")
-                .build();
+    void equalsAndHashCodeForEmptyReservations() {
+        Reservation r1 = new Reservation();
+        Reservation r2 = new Reservation();
 
-        String ts = r.toString();
-        assertTrue(ts.contains("res-2"));
-        assertTrue(ts.contains("t-2"));
-        assertTrue(ts.contains("s-2"));
+        assertEquals(r1, r2);
+        assertEquals(r1.hashCode(), r2.hashCode());
+    }
+
+    @Test
+    void reservationStatusEnumShouldBeCovered() {
+        for (ReservationStatus st : ReservationStatus.values()) {
+            assertEquals(st, ReservationStatus.valueOf(st.name()));
+        }
     }
 }

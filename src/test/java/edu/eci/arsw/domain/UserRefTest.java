@@ -25,19 +25,45 @@ class UserRefTest {
     }
 
     @Test
-    void equalsHashCodeAndToStringShouldWork() {
+    void equalsHashCodeToStringAndCanEqualShouldBeCovered() {
         UserRef a = new UserRef("x", "a@b.com", "A");
         UserRef b = new UserRef("x", "a@b.com", "A");
         UserRef c = new UserRef("y", "c@d.com", "C");
 
         assertEquals(a, b);
+        assertEquals(a, a);
         assertEquals(a.hashCode(), b.hashCode());
         assertNotEquals(a, c);
         assertNotEquals(null, a);
         assertNotEquals("otro", a);
 
+        assertTrue(a.canEqual(b));
+        assertFalse(a.canEqual(new Object()));
+
+        class BadUserRef extends UserRef {
+            public BadUserRef(String id, String email, String name) {
+                super(id, email, name);
+            }
+
+            @Override
+            protected boolean canEqual(Object other) {
+                return false;
+            }
+        }
+        UserRef bad = new BadUserRef("x", "a@b.com", "A");
+        assertNotEquals(a, bad);
+
         String ts = a.toString();
         assertTrue(ts.contains("x"));
         assertTrue(ts.contains("a@b.com"));
+    }
+
+    @Test
+    void equalsAndHashCodeForEmptyUserRefs() {
+        UserRef u1 = new UserRef();
+        UserRef u2 = new UserRef();
+
+        assertEquals(u1, u2);
+        assertEquals(u1.hashCode(), u2.hashCode());
     }
 }
