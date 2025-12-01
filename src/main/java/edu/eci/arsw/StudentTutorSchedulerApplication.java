@@ -32,7 +32,10 @@ public class StudentTutorSchedulerApplication {
                 registry.addMapping("/**")
                         .allowedOrigins(allowedOrigins.split(","))
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                        .allowCredentials(true);
+                        .allowedHeaders("*")
+                        .exposedHeaders("*")
+                        .allowCredentials(true)
+                        .maxAge(3600);
             }
         };
     }
