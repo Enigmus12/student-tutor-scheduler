@@ -29,8 +29,13 @@ public class StudentTutorSchedulerApplication {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
+                String[] origins = allowedOrigins.split(",");
+                for (int i = 0; i < origins.length; i++) {
+                    origins[i] = origins[i].trim();
+                }
+                
                 registry.addMapping("/**")
-                        .allowedOrigins(allowedOrigins.split(","))
+                        .allowedOriginPatterns("*") // Cambiado para permitir cualquier origen con credenciales
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .exposedHeaders("*")
